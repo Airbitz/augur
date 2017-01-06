@@ -90,17 +90,13 @@ export const selectAirbitzLink = memoize((authType, dispatch) => ({
 
 export const selectAirbitzOnLoad = memoize(dispatch => ({
   onLoad: () => {
-    const abcContext = require('../../../selectors').abc.abcContext;
-    const usernames = abcContext.listUsernames();
-    if (usernames.length > 0) {
-      require('../../../selectors').abc.openLoginWindow((result, airbitzAccount) => {
-        if (airbitzAccount) {
-          dispatch(loginWithAirbitz(airbitzAccount));
-        } else {
-          console.log('error registering in: ' + result);
-        }
-      });
-    }
+    require('../../../selectors').abc.openLoginWindow((result, airbitzAccount) => {
+      if (airbitzAccount) {
+        dispatch(loginWithAirbitz(airbitzAccount));
+      } else {
+        console.log('error registering in: ' + result);
+      }
+    });
   }
 }), { max: 1 });
 
