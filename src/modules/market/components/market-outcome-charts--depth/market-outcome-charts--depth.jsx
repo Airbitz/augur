@@ -167,10 +167,13 @@ export default class MarketOutcomeDepth extends Component {
 
       const depthContainer = new ReactFauxDOM.Element('div')
 
+      // padding for overflowing x-axis ticks
+      const widthPadding = 30
+
       const depthChart = d3.select(depthContainer)
         .append('svg')
         .attr('id', 'depth_chart')
-        .attr('width', drawParams.containerWidth)
+        .attr('width', drawParams.containerWidth + widthPadding)
         .attr('height', drawParams.containerHeight)
 
       drawTicks({
@@ -328,24 +331,24 @@ export default class MarketOutcomeDepth extends Component {
   }
 }
 
-function nearestCompletelyFillingOrder(price, marketDepth) {
-  return Object.keys(marketDepth).reduce((p, side) => {
+export function nearestCompletelyFillingOrder(price, { asks = [], bids = [] }) {
+  const PRICE_INDEX = 1
+  const items = [
+    ...asks.map(it => [...it, ASKS]),
+    ...bids.map(it => [...it, BIDS]),
+  ]
 
-    const fillingSideOrder = marketDepth[side].reduce((p, order) => {
-      if (p === null) return order
-      if (side === ASKS) {
-        return (price > p[1] && price < order[1]) ? [...order, ASKS] : p
-      }
+  let closestIndex = -1
+  let closestDistance = Number.MAX_VALUE
+  for (let i = 0; i < items.length; i++) {
+    const dist = Math.abs(items[i][PRICE_INDEX] - price)
+    if (dist < closestDistance) {
+      closestIndex = i
+      closestDistance = dist
+    }
+  }
 
-      return (price < p[1] && price > order[1]) ? [...order, BIDS] : p
-    }, null)
-
-    if (p === null) return fillingSideOrder
-
-    if (fillingSideOrder == null) return p
-
-    return Math.abs(price - p[1]) < Math.abs(price - fillingSideOrder[1]) ? p : fillingSideOrder
-  }, null)
+  return closestIndex === -1 ? null : items[closestIndex]
 }
 
 function determineDrawParams(options) {

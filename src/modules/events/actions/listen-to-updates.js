@@ -10,6 +10,7 @@ import {
   handleOrderFilledLog,
   handleTradingProceedsClaimedLog,
   handleInitialReportSubmittedLog,
+  handleInitialReporterRedeemedLog,
   handleMarketFinalizedLog,
   handleDisputeCrowdsourcerCreatedLog,
   handleDisputeCrowdsourcerContributionLog,
@@ -17,6 +18,9 @@ import {
   handleDisputeCrowdsourcerRedeemedLog,
   handleFeeWindowCreatedLog,
   handleFeeWindowOpenedLog,
+  handleTokensMintedLog,
+  handleTokensBurnedLog,
+  handleFeeWindowRedeemedLog,
 } from 'modules/events/actions/log-handlers'
 import { wrapLogHandler } from 'modules/events/actions/wrap-log-handler'
 import logError from 'utils/log-error'
@@ -37,6 +41,7 @@ export const listenToUpdates = history => (dispatch, getState) => {
     OrderFilled: dispatch(wrapLogHandler(handleOrderFilledLog)),
     TradingProceedsClaimed: dispatch(wrapLogHandler(handleTradingProceedsClaimedLog)),
     InitialReportSubmitted: dispatch(wrapLogHandler(handleInitialReportSubmittedLog)),
+    InitialReporterRedeemed: dispatch(wrapLogHandler(handleInitialReporterRedeemedLog)),
     MarketFinalized: dispatch(wrapLogHandler(handleMarketFinalizedLog)),
     DisputeCrowdsourcerCreated: dispatch(wrapLogHandler(handleDisputeCrowdsourcerCreatedLog)),
     DisputeCrowdsourcerContribution: dispatch(wrapLogHandler(handleDisputeCrowdsourcerContributionLog)),
@@ -45,14 +50,13 @@ export const listenToUpdates = history => (dispatch, getState) => {
     UniverseForked: dispatch(wrapLogHandler()),
     CompleteSetsPurchased: dispatch(wrapLogHandler()),
     CompleteSetsSold: dispatch(wrapLogHandler()),
-    TokensMinted: dispatch(wrapLogHandler()),
-    TokensBurned: dispatch(wrapLogHandler()),
+    TokensMinted: dispatch(wrapLogHandler(handleTokensMintedLog)),
+    TokensBurned: dispatch(wrapLogHandler(handleTokensBurnedLog)),
     FeeWindowCreated: dispatch(wrapLogHandler(handleFeeWindowCreatedLog)),
     FeeWindowOpened: dispatch(wrapLogHandler(handleFeeWindowOpenedLog)),
     InitialReporterTransferred: dispatch(wrapLogHandler()),
     TimestampSet: dispatch(wrapLogHandler()),
-    InitialReporterRedeemed: dispatch(wrapLogHandler()),
-    FeeWindowRedeemed: dispatch(wrapLogHandler()),
+    FeeWindowRedeemed: dispatch(wrapLogHandler(handleFeeWindowRedeemedLog)),
     UniverseCreated: dispatch(wrapLogHandler()),
   }, logError)
   augur.events.nodes.augur.on('disconnect', event => dispatch(handleAugurNodeDisconnect(history, event)))

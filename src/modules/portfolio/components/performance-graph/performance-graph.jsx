@@ -16,6 +16,7 @@ class PerformanceGraph extends Component {
     universe: PropTypes.string.isRequired,
     currentAugurTimestamp: PropTypes.number.isRequired,
     getProfitLoss: PropTypes.func.isRequired,
+    isAnimating: PropTypes.bool.isRequired,
   }
 
   constructor(props) {
@@ -64,10 +65,39 @@ class PerformanceGraph extends Component {
     this.updateChartDebounced = debounce(this.updateChart.bind(this))
     this.updatePerformanceData = this.updatePerformanceData.bind(this)
     this.parsePerformanceData = this.parsePerformanceData.bind(this)
+    this.chartSetup = this.chartSetup.bind(this)
+    this.chartFullRefresh = this.chartFullRefresh.bind(this)
   }
 
   componentDidMount() {
     noData(Highcharts)
+    this.chartFullRefresh(!this.props.isAnimating)
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if ((prevProps.isAnimating && !this.props.isAnimating) || !this.state.selectedSeriesData.length) {
+      // fetch data as we need a new range of info
+      this.chartFullRefresh(true)
+    } else if (prevState.graphPeriod !== this.state.graphPeriod) {
+      this.updatePerformanceData()
+    } else if (prevState.graphType !== this.state.graphType) {
+      // update chart based on data we have in state, no fetch
+      this.parsePerformanceData()
+    }
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateChartDebounced)
+  }
+
+  chartFullRefresh(forceUpdate = false) {
+    this.chartSetup(() => {
+      if (forceUpdate) this.updatePerformanceData()
+    })
+  }
+
+  chartSetup(callback = (() => {})) {
+    window.removeEventListener('resize', this.updateChartDebounced)
 
     Highcharts.setOptions({
       lang: {
@@ -133,10 +163,10 @@ class PerformanceGraph extends Component {
           },
         },
         tickLength: 6,
-        showFirstLabel: false,
-        showLastLabel: false,
+        showFirstLabel: true,
+        showLastLabel: true,
         tickPositioner(low, high) {
-          const positions = [low, this.dataMin, this.dataMax, high]
+          const positions = [this.dataMin, this.dataMax]
           return positions
         },
       },
@@ -155,7 +185,7 @@ class PerformanceGraph extends Component {
           x: 5,
           format: '{value} ETH',
           formatter() {
-            return formatEther(this.value).full
+            return `${formatEther(this.value).formattedValue} ETH`
           },
           style: {
             color: '#a7a2b2',
@@ -166,13 +196,23 @@ class PerformanceGraph extends Component {
         },
         tickPositioner() {
           // default
-          let positions = [this.dataMin, (this.dataMax / 2), Math.ceil(this.dataMax) + (this.dataMax * 0.05)]
-
-          if (this.series[0] && this.series[0].length > 0) {
-            const { data } = this.series[0]
-            const i = data.length / 2
-            const median = i % 1 === 0 ? (data[i - 1] + data[i]) / 2 : data[Math.floor(i)]
-            positions = [this.dataMin, median, Math.ceil(this.dataMax) + (this.dataMax * 0.05)]
+          let positions = [-0.15, 0, 0.5, 1]
+          if (this.series[0]) {
+            positions = []
+            let minTickValue = this.dataMin === 0 ? -0.25 : (this.dataMin - (Math.abs(this.dataMin) * 0.25))
+            let maxTickValue = this.dataMax === 0 ? 0.25 : (Math.ceil(this.dataMax) + (this.dataMax * 0.05))
+            if (this.dataMin === 0 && this.dataMax > 0) {
+              minTickValue = ((Math.abs(this.dataMax) * 0.25) * -1)
+            }
+            if (this.dataMax === 0 && this.dataMin < 0) {
+              maxTickValue = (Math.abs(this.dataMin) * 0.25)
+            }
+            const median = ((minTickValue + maxTickValue) / 2)
+            positions.push(minTickValue)
+            if (median > 0) positions.push(0)
+            positions.push(median)
+            if (median < 0) positions.push(0)
+            positions.push(maxTickValue)
           }
           return positions
         },
@@ -222,21 +262,7 @@ class PerformanceGraph extends Component {
 
     window.addEventListener('resize', this.updateChartDebounced)
 
-    this.updatePerformanceData()
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.graphPeriod !== this.state.graphPeriod) {
-      // fetch data as we need a new range of info
-      this.updatePerformanceData()
-    } else if (prevState.graphType !== this.state.graphType) {
-      // update chart based on data we have in state, no fetch
-      this.parsePerformanceData()
-    }
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.updateChartDebounced)
+    callback()
   }
 
   changeDropdown(value) {
@@ -305,9 +331,10 @@ class PerformanceGraph extends Component {
     getProfitLoss(universe, startTime, endTime, null, (err, rawPerformanceData) => {
       if (err) return console.error(err)
       // make the first entry into the data a 0 value to make sure we start from 0 PL
-      const interval = rawPerformanceData[1].timestamp - rawPerformanceData[0].timestamp
-      let performanceData = [{ timestamp: (rawPerformanceData[0].timestamp - interval), profitLoss: { unrealized: '0', realized: '0', total: '0' } }]
-      performanceData = performanceData.concat(rawPerformanceData)
+      const { aggregate } = rawPerformanceData
+      const interval = aggregate[1].timestamp - aggregate[0].timestamp
+      let performanceData = [{ timestamp: (aggregate[0].timestamp - interval), profitLoss: { unrealized: '0', realized: '0', total: '0' } }]
+      performanceData = performanceData.concat(aggregate)
       this.setState({ performanceData }, () => {
         this.parsePerformanceData()
       })

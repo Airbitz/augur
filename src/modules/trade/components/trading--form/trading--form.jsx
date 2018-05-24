@@ -42,6 +42,8 @@ class MarketTradingForm extends Component {
       MARKET_ORDER_SIZE: 'marketOrderTotal',
     }
 
+    this.MINIMUM_TRADE_VALUE = createBigNumber(1, 10).dividedBy(10000)
+
     this.state = {
       [this.INPUT_TYPES.QUANTITY]: '',
       [this.INPUT_TYPES.PRICE]: '',
@@ -114,7 +116,7 @@ class MarketTradingForm extends Component {
     let errorCount = 0
     let passedTest = !!isOrderValid
     if (isNaN(value)) return { isOrderValid: false, errors, errorCount }
-    if (value && value.lt(0)) {
+    if (value && value.lte(0)) {
       errorCount += 1
       passedTest = false
       errors[this.INPUT_TYPES.QUANTITY].push('Quantity must be greater than 0')
@@ -131,7 +133,7 @@ class MarketTradingForm extends Component {
     let errorCount = 0
     let passedTest = !!isOrderValid
     if (isNaN(value)) return { isOrderValid: false, errors, errorCount }
-    if (value && (value.lt(minPrice) || value.gt(maxPrice))) {
+    if (value && (value.lte(minPrice) || value.gte(maxPrice))) {
       errorCount += 1
       passedTest = false
       errors[this.INPUT_TYPES.PRICE].push(`Price must be between ${minPrice} - ${maxPrice}`)
@@ -154,14 +156,14 @@ class MarketTradingForm extends Component {
     let isOrderValid = true
     let errorCount = 0
 
-    let value = order[this.INPUT_TYPES.QUANTITY] && createBigNumber(order[this.INPUT_TYPES.QUANTITY])
-    const { isOrderValid: quantityValid, errors: quantityErrors, errorCount: quantityErrorCount } = this.testQuantity(value, errors, isOrderValid)
+    const quantity = order[this.INPUT_TYPES.QUANTITY] && createBigNumber(order[this.INPUT_TYPES.QUANTITY])
+    const { isOrderValid: quantityValid, errors: quantityErrors, errorCount: quantityErrorCount } = this.testQuantity(quantity, errors, isOrderValid)
     isOrderValid = quantityValid
     errorCount += quantityErrorCount
     errors = { ...errors, ...quantityErrors }
 
-    value = order[this.INPUT_TYPES.PRICE] && createBigNumber(order[this.INPUT_TYPES.PRICE])
-    const { isOrderValid: priceValid, errors: priceErrors, errorCount: priceErrorCount } = this.testPrice(value, errors, isOrderValid)
+    const price = order[this.INPUT_TYPES.PRICE] && createBigNumber(order[this.INPUT_TYPES.PRICE])
+    const { isOrderValid: priceValid, errors: priceErrors, errorCount: priceErrorCount } = this.testPrice(price, errors, isOrderValid)
     isOrderValid = priceValid
     errorCount += priceErrorCount
     errors = { ...errors, ...priceErrors }
@@ -183,6 +185,8 @@ class MarketTradingForm extends Component {
 
   validateForm(property, rawValue) {
     const { updateState } = this.props
+    // since the order changed by user action, make sure we can place orders.
+    updateState('doNotCreateOrders', false)
     let value = rawValue
     if (!(BigNumber.isBigNumber(value)) && value !== '') value = createBigNumber(value)
     const updatedState = {

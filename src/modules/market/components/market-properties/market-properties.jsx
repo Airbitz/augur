@@ -16,20 +16,22 @@ import ChevronFlip from 'modules/common/components/chevron-flip/chevron-flip'
 import { MODAL_MIGRATE_MARKET } from 'modules/modal/constants/modal-types'
 
 const MarketProperties = (p) => {
-  const shareVolumeRounded = getValue(p, 'volume.rounded')
+  const shareVolumeFormatted = getValue(p, 'volume.formatted')
   const shareDenomination = shareDenominationLabel(p.selectedShareDenomination, p.shareDenominations)
   const isScalar = p.marketType === SCALAR
-  const consensus = getValue(p, isScalar ? 'consensus.winningOutcome' : 'consensus.outcomeName')
+  let consensus = getValue(p, isScalar ? 'consensus.winningOutcome' : 'consensus.outcomeName')
   const linkType = (p.isForking && p.linkType === TYPE_DISPUTE) ? TYPE_VIEW : p.linkType
   const disableDispute = p.loginAccount.rep === '0' && p.linkType === TYPE_DISPUTE
-
+  if (getValue(p, 'consensus.isInvalid')) {
+    consensus = 'Invalid'
+  }
   return (
     <article>
       <section className={Styles.MarketProperties}>
         <ul className={Styles.MarketProperties__meta}>
           <li>
             <span>Volume</span>
-            <ValueDenomination formatted={shareVolumeRounded} denomination={shareDenomination} />
+            <ValueDenomination formatted={shareVolumeFormatted} denomination={shareDenomination} />
           </li>
           <li>
             <span>Fee</span>
@@ -39,15 +41,6 @@ const MarketProperties = (p) => {
             <span>{p.endTime && dateHasPassed(p.currentTimestamp, p.endTime.timestamp) ? 'Expired' : 'Expires'}</span>
             <span>{ p.isMobile ? p.endTime.formattedLocalShort : p.endTime.formattedLocalShortTime }</span>
           </li>
-          {p.marketCreatorFeesCollected &&
-          <li>
-            <span>Collected Returns</span>
-            <ValueDenomination
-              formatted={p.marketCreatorFeesCollected.rounded}
-              denomination={p.marketCreatorFeesCollected.denomination}
-            />
-          </li>
-          }
           {consensus &&
           <li>
             <span>Winning Outcome</span>

@@ -4,6 +4,7 @@ import universe from 'modules/universe/reducers/universe'
 import connection from 'modules/app/reducers/connection'
 import isMobile from 'modules/app/reducers/is-mobile'
 import isMobileSmall from 'modules/app/reducers/is-mobile-small'
+import isAnimating from 'modules/app/reducers/is-animating'
 import loginAccount from 'modules/auth/reducers/login-account'
 import edgeContext from 'modules/auth/reducers/edge-context'
 import isLogged from 'modules/auth/reducers/is-logged'
@@ -44,6 +45,7 @@ import modal from 'modules/modal/reducers/modal'
 import participationTokens from 'modules/my-participation-tokens/reducers/participation-token-data'
 import initialReporters from 'modules/my-initial-reporters/reducers/initial-reporters-data'
 import disputeCrowdsourcerTokens from 'modules/my-dispute-crowdsourcer-tokens/reducers/dispute-crowdsourcer-data'
+import allOrders from 'modules/escape-hatch/reducers/all-orders-data'
 
 export function createReducer() {
   return {
@@ -54,6 +56,7 @@ export function createReducer() {
     isMobile,
     isMobileSmall,
     edgeContext,
+    isAnimating,
     loginAccount,
     isLogged,
     ledgerStatus,
@@ -92,5 +95,6 @@ export function createReducer() {
     initialReporters,
     disputeCrowdsourcerTokens,
     accountDisputes,
+    allOrders,
   }
 }

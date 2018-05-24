@@ -20,6 +20,7 @@ import Styles from 'modules/create-market/components/create-market-form-liquidit
 import StylesForm from 'modules/create-market/components/create-market-form/create-market-form.styles'
 
 const PRECISION = 4
+const NEW_ORDER_GAS_ESTIMATE = createBigNumber(700000)
 
 export default class CreateMarketLiquidity extends Component {
 
@@ -283,10 +284,10 @@ export default class CreateMarketLiquidity extends Component {
     // NOTE: Fees are going to always be 0 because we are only opening orders, and there is no costs associated with opening orders other than the escrowed ETH and the gas to put the order up.
     if (shouldReduce) {
       initialLiquidityEth = newMarket.initialLiquidityEth.minus(action.tokensDepleted)
-      initialLiquidityGas = newMarket.initialLiquidityGas.minus(createBigNumber(action.gasEstimate || 0))
+      initialLiquidityGas = newMarket.initialLiquidityGas.minus(NEW_ORDER_GAS_ESTIMATE)
     } else {
       initialLiquidityEth = newMarket.initialLiquidityEth.plus(action.tokensDepleted)
-      initialLiquidityGas = newMarket.initialLiquidityGas.plus(createBigNumber(action.gasEstimate || 0))
+      initialLiquidityGas = newMarket.initialLiquidityGas.plus(NEW_ORDER_GAS_ESTIMATE)
     }
 
     updateNewMarket({ initialLiquidityEth, initialLiquidityGas })
@@ -339,19 +340,19 @@ export default class CreateMarketLiquidity extends Component {
           errors.price.push(`Price must be less than best ask price of: ${asks[0].price.toNumber()}`)
         } else if (this.state.selectedNav === ASK && bids && bids.length && orderPrice.lte(bids[0].price)) {
           errors.price.push(`Price must be greater than best bid price of: ${bids[0].price.toNumber()}`)
-        } else if (orderPrice.gt(this.state.maxPrice)) {
-          errors.price.push('Price cannot exceed 1')
+        } else if (orderPrice.gte(this.state.maxPrice)) {
+          errors.price.push('Price must be less than 1')
         } else if (orderPrice.lt(this.state.minPrice)) {
-          errors.price.push('Price cannot be below 0')
+          errors.price.push('Price must be greater than 0')
         }
       } else if (this.state.selectedNav === BID && asks && asks.length && orderPrice.gte(asks[0].price)) {
         errors.price.push(`Price must be less than best ask price of: ${asks[0].price.toNumber()}`)
       } else if (this.state.selectedNav === ASK && bids && bids.length && orderPrice.lte(bids[0].price)) {
         errors.price.push(`Price must be greater than best bid price of: ${bids[0].price.toNumber()}`)
-      } else if (orderPrice.gt(this.state.maxPrice)) {
-        errors.price.push(`Price cannot exceed ${this.state.maxPrice.toNumber()}`)
-      } else if (orderPrice.lt(this.state.minPrice)) {
-        errors.price.push(`Price cannot be below ${this.state.minPrice.toNumber()}`)
+      } else if (orderPrice.gte(this.state.maxPrice)) {
+        errors.price.push(`Price must be less than ${this.state.maxPrice.toNumber()}`)
+      } else if (orderPrice.lte(this.state.minPrice)) {
+        errors.price.push(`Price must be greater than ${this.state.minPrice.toNumber()}`)
       }
     }
 
@@ -401,6 +402,10 @@ export default class CreateMarketLiquidity extends Component {
     this.setState({ orderEstimate })
   }
 
+  formatOrderValue(orderValue) {
+    return orderValue !== '' ? createBigNumber(this.state.orderQuantity, 10).toString() : orderValue
+  }
+
   render() {
     const {
       isMobileSmall,
@@ -444,7 +449,7 @@ export default class CreateMarketLiquidity extends Component {
               <li className={classNames({ [`${Styles.active}`]: s.selectedNav === BID })}>
                 <button
                   onClick={() => {
-                    this.setState({ selectedNav: BID }, () => this.validateForm(createBigNumber(this.state.orderQuantity || '0', 10).toString(), createBigNumber(this.state.orderPrice || '0', 10).toString()))
+                    this.setState({ selectedNav: BID }, () => this.validateForm(this.formatOrderValue(this.state.orderQuantity), this.formatOrderValue(this.state.orderPrice)))
                   }}
                 >
                   Buy
@@ -453,7 +458,7 @@ export default class CreateMarketLiquidity extends Component {
               <li className={classNames({ [`${Styles.active}`]: s.selectedNav === ASK })}>
                 <button
                   onClick={() => {
-                    this.setState({ selectedNav: ASK }, () => this.validateForm(createBigNumber(this.state.orderQuantity || '0', 10).toString(), createBigNumber(this.state.orderPrice || '0', 10).toString()))
+                    this.setState({ selectedNav: ASK }, () => this.validateForm(this.formatOrderValue(this.state.orderQuantity), this.formatOrderValue(this.state.orderPrice)))
                   }}
                 >
                   Sell

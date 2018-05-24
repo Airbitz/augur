@@ -6,30 +6,40 @@ import { closeModal } from 'modules/modal/actions/close-modal'
 import { loadReportingWindowBounds } from 'modules/reporting/actions/load-reporting-window-bounds'
 
 export const purchaseParticipationTokens = (amount, estimateGas = false, callback = logError) => (dispatch, getState) => {
-  const { universe, loginAccount } = getState()
+  const { universe } = getState()
   augur.reporting.getFeeWindowCurrent({ universe: universe.id }, (err, currFeeWindowInfo) => {
     if (err) return callback(err)
-    const feeWindowAddress = currFeeWindowInfo.feeWindow
-    augur.api.FeeWindow.buy({
-      tx: {
-        meta: loginAccount.meta,
-        to: feeWindowAddress,
-        estimateGas,
-      },
-      _attotokens: speedomatic.fix(amount, 'hex'),
-      onSent: () => {
-        // if we aren't estimatingGas, close the modal once the transaction is sent.
-        if (!estimateGas) dispatch(closeModal())
-      },
-      onSuccess: (res) => {
-        if (estimateGas) {
-          const gasPrice = augur.rpc.getGasPrice()
-          return callback(null, formatGasCostToEther(res, { decimalsRounded: 4 }, gasPrice))
-        }
-        dispatch(loadReportingWindowBounds())
-        return callback(null, res)
-      },
-      onFailed: err => callback(err),
-    })
+    let methodFunc = augur.api.FeeWindow.buy
+    let address = currFeeWindowInfo.feeWindow
+    if (address == null) {
+      methodFunc = augur.api.Universe.buyParticipationTokens
+      address = universe.id
+    }
+    return dispatch(callMethod(methodFunc, amount, address, estimateGas, callback))
+  })
+}
+
+const callMethod = (method, amount, address, estimateGas = false, callback) => (dispatch, getState) => {
+  const { loginAccount } = getState()
+  method({
+    tx: {
+      meta: loginAccount.meta,
+      to: address,
+      estimateGas,
+    },
+    _attotokens: speedomatic.fix(amount, 'hex'),
+    onSent: () => {
+      // need fee window to do gas estimate
+      if (!estimateGas) dispatch(closeModal())
+    },
+    onSuccess: (res) => {
+      if (estimateGas) {
+        const gasPrice = augur.rpc.getGasPrice()
+        return callback(null, formatGasCostToEther(res, { decimalsRounded: 4 }, gasPrice))
+      }
+      dispatch(loadReportingWindowBounds())
+      return callback(null, res)
+    },
+    onFailed: err => callback(err),
   })
 }

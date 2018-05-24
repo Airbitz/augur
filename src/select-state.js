@@ -19,6 +19,7 @@ export const selectHasLoadedMarketsState = state => state.hasLoadedMarkets
 export const selectInitialReporters = state => state.initialReporters
 export const selectIsLogged = state => state.isLogged
 export const selectIsMobile = state => state.isMobile
+export const selectIsAnimating = state => state.isAnimating
 export const selectIsMobileSmall = state => state.isMobileSmall
 export const selectLoginAccountState = state => state.loginAccount
 export const selectMarketCreatorFeesState = state => state.marketCreatorFees
@@ -31,6 +32,7 @@ export const selectNewMarketState = state => state.newMarket
 export const selectNotificationsState = state => state.notifications
 export const selectOrderBooksState = state => state.orderBooks
 export const selectOrderCancellationState = state => state.orderCancellation
+export const selectAllOrders = state => state.allOrders
 export const selectOutcomesDataState = state => state.outcomesData
 export const selectParticipationTokens = state => state.participationTokens
 export const selectPriceHistoryState = state => state.priceHistory

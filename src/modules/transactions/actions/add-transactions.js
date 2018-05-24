@@ -87,6 +87,7 @@ function buildTradeTransaction(trade, marketsData) {
   meta.shares = formattedShares.formatted
   meta.price = transaction.price
   meta.fee = transaction.settlementFees
+  meta.txhash = transaction.transactionHash
   transaction.meta = meta
   header.status = SUCCESS
   if (transaction.market) {
@@ -115,11 +116,13 @@ export function addTransferTransactions(transfers) {
         meta.value = `${formatAttoRep(transaction.value, { decimals: 4, roundUp: true }).formatted}`
         header.message = 'Participation Tokens purchased'
         header.description = `${meta.value} Participation purchased`
-      } else if (transaction.market === '0x0000000000000000000000000000000000000000' && transaction.eventName === 'TokensTransferred') {
+      } else if (transaction.symbol === 'REP' || (transaction.market === '0x0000000000000000000000000000000000000000' && transaction.eventName === 'TokensTransferred')) {
         meta.value = `${formatAttoRep(transaction.value, { decimals: 4, roundUp: true }).formatted}`
+        meta.block = transaction.blockNumber || transaction.creationBlockNumber
+        meta.sender = transaction.sender
         transaction.symbol = 'REP'
-        header.message = 'No Show bond Transfer'
-        header.description = `${meta.value} ${transaction.symbol} transferred for no-show bond`
+        header.message = 'Rep Transfer'
+        header.description = `${meta.value} ${transaction.symbol} transferred`
       } else {
         header.message = 'Transfer'
         header.description = `${meta.value} ${transaction.symbol} transferred from ${transaction.sender} to ${transaction.recipient}`

@@ -3,9 +3,10 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import Styles from 'modules/forking/components/fork-migration-totals/fork-migration-totals.styles'
 import selectMigrateTotals from 'modules/reporting/selectors/select-migrated-totals'
+import { createBigNumber } from 'utils/create-big-number'
 
 const ForkMigrationTotal = ({ className, forkMigrationTotal }) => {
-  const currentMigrated = forkMigrationTotal.rep.rounded ? forkMigrationTotal.rep.rounded : '0'
+  const currentMigrated = forkMigrationTotal.rep.full ? forkMigrationTotal.rep.full : '0'
   const forkMigrationTotalName = forkMigrationTotal.name === 'Indeterminate' ? 'Invalid' : forkMigrationTotal.name
 
   return (
@@ -35,12 +36,34 @@ class ForkMigrationTotals extends Component {
       forkMigrationTotalWrapperHeight: 0,
       isOpen: false,
       forkMigrationTotalsMap: {},
+      blockNumber: props.currentBlockNumber,
     }
 
     this.showMore = this.showMore.bind(this)
   }
 
   componentWillMount() {
+    this.getForkMigrationTotals()
+  }
+
+  componentWillReceiveProps(newProps) {
+    const updateBlock = createBigNumber(this.state.blockNumber)
+    const currentBlock = createBigNumber(newProps.currentBlockNumber)
+    if (currentBlock.gt(updateBlock)) {
+      this.setState({
+        blockNumber: this.props.currentBlockNumber,
+      })
+    }
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    const updateBlock = createBigNumber(this.state.blockNumber)
+    const currentBlock = createBigNumber(nextProps.currentBlockNumber)
+    if (currentBlock.gt(updateBlock)) return true
+    return false
+  }
+
+  componentWillUpdate() {
     this.getForkMigrationTotals()
   }
 
@@ -124,6 +147,7 @@ ForkMigrationTotals.propTypes = {
   universe: PropTypes.string.isRequired,
   forkingMarket: PropTypes.object.isRequired,
   getForkMigrationTotals: PropTypes.func.isRequired,
+  currentBlockNumber: PropTypes.number.isRequired,
 }
 
 ForkMigrationTotal.propTypes = {
